@@ -87,7 +87,7 @@ if [ "$FLASHATTN" = true ] ; then
         git clone --recursive https://github.com/ROCm/flash-attention.git /tmp/extensions/flash-attention
         cd /tmp/extensions/flash-attention
         git checkout tags/v2.7.3-cktile
-        GPU_ARCHS=gfx1201 python setup.py install
+        GPU_ARCHS=gfx1150 python setup.py install
         cd $WORKDIR
     else
         echo "[FLASHATTN] Unsupported platform: $PLATFORM"

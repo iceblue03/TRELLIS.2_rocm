@@ -105,7 +105,26 @@ class Trellis2ImageTo3DPipeline(Pipeline):
         pipeline.tex_slat_normalization = args['tex_slat_normalization']
 
         pipeline.image_cond_model = getattr(image_feature_extractor, args['image_cond_model']['name'])(**args['image_cond_model']['args'])
-        pipeline.rembg_model = getattr(rembg, args['rembg_model']['name'])(**args['rembg_model']['args'])
+        _rembg_cls = getattr(rembg, args['rembg_model']['name'])
+        _rembg_args = dict(args['rembg_model']['args'])
+        # briaai/RMBG-2.0 is gated; ZhengPeng7/BiRefNet is the same architecture
+        # and is the wrapper's own default.
+        _rembg_fallbacks = [_rembg_args.get('model_name'), 'ZhengPeng7/BiRefNet',
+                            'ZhengPeng7/BiRefNet_lite']
+        pipeline.rembg_model = None
+        for _name in _rembg_fallbacks:
+            if _name is None:
+                continue
+            try:
+                _rembg_args['model_name'] = _name
+                pipeline.rembg_model = _rembg_cls(**_rembg_args)
+                print(f"[rembg] using {_name}")
+                break
+            except Exception as _e:
+                print(f"[rembg] {_name} unavailable ({type(_e).__name__}); trying next")
+        if pipeline.rembg_model is None:
+            print("[WARN] no background-removal model available; "
+                  "inputs must be RGBA with an alpha channel.")
         
         pipeline.low_vram = args.get('low_vram', True)
         pipeline.default_pipeline_type = args.get('default_pipeline_type', '1024_cascade')
